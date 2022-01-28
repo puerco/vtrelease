@@ -1,19 +1,30 @@
 package release
 
-import "github.com/pkg/errors"
+import (
+	"github.com/pkg/errors"
+	"sigs.k8s.io/release-sdk/git"
+)
 
 type StageImplementation interface {
+	CheckOptions(*StageOptions) error
 	SetEnvironment(*StageOptions, *State) error
+	OpenRepository(*StageOptions, *State) error
 	GenerateReleaseNotes(*StageOptions, *State) error
 	TagRepository(*StageOptions, *State) error
 	WriteVersionFile(*StageOptions, string) error
 	GenerateJavaVersions(*StageOptions, *State, string) error
 	AddAndCommit(*StageOptions, *State, string) error
 	CreateTag(*StageOptions, *State, string) error
+	TagGoDocVersion(o *StageOptions, s *State) error
 }
 
 type StageOptions struct {
 	RepoPath string
+}
+
+func (o *StageOptions) Validate() error {
+	// TODO: Implement
+	return nil
 }
 
 type State struct {
@@ -21,6 +32,7 @@ type State struct {
 	DevVersion       string
 	GoDocVersion     string
 	ReleaseNotesPath string
+	Repository       *git.Repo
 }
 
 type Stage struct {
@@ -31,7 +43,7 @@ type Stage struct {
 
 // Run executes the release run
 func (s *Stage) Run() error {
-	if err := s.SetEnvironment(); err != nil {
+	if err := s.PrepareEnvironment(); err != nil {
 		return errors.Wrap(err, "setting up environment")
 	}
 
@@ -45,7 +57,13 @@ func (s *Stage) Run() error {
 	return nil
 }
 
-func (s *Stage) SetEnvironment() error {
+func (s *Stage) PrepareEnvironment() error {
+	if err := s.impl.CheckOptions(&s.Options); err != nil {
+		return errors.Wrap(err, "checking staging options")
+	}
+	if err := s.impl.OpenRepository(&s.Options, &s.State); err != nil {
+		return errors.Wrap(err, "opening repository")
+	}
 	// FIXME: Check env . Check java compiler
 	return s.impl.SetEnvironment(&s.Options, &s.State)
 }
@@ -73,7 +91,9 @@ func (s *Stage) TagRepository() error {
 
 		// If we have a GO_DOC
 		if s.State.GoDocVersion != "" {
-			// Add GODoc tag hwew
+			if err := s.impl.TagGoDocVersion(&s.Options, &s.State); err != nil {
+				return errors.Wrap(err, "tagging godoc version")
+			}
 		}
 
 		if err := s.impl.AddAndCommit(&s.Options, &s.State, tag); err != nil {

@@ -15,6 +15,16 @@ const versionFile = "go/vt/servenv/version.go"
 
 type DefaultStageImplementation struct{}
 
+func (di *DefaultStageImplementation) OpenRepository(o *StageOptions, s *State) error {
+	repo, err := git.OpenRepo(o.RepoPath)
+	if err != nil {
+		return errors.Wrap(err, "opening repository")
+	}
+	logrus.Infof("Opened git repository in %s", o.RepoPath)
+	s.Repository = repo
+	return nil
+}
+
 func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions) error {
 	// Sets the environment for the next release
 	e := env.New()
@@ -87,23 +97,47 @@ func (di *DefaultStageImplementation) GenerateJavaVersions(o *StageOptions, s *S
 	)
 }
 
+func (di *DefaultStageImplementation) TagGoDocVersion(o *StageOptions, s *State) error {
+	// git tag -a v$(GODOC_RELEASE_VERSION) -m "Tagging $(RELEASE_VERSION) also as $(GODOC_RELEASE_VERSION) for godoc/go modules"
+	if err := s.Repository.Tag(
+		s.GoDocVersion, fmt.Sprintf(
+			"Tagging %s also as %s for godoc/go modules",
+			s.Version, s.GoDocVersion,
+		)); err != nil {
+		return errors.Wrap(err, "creating godoc tag")
+	}
+	logrus.Info("Tagged release commit with godoc tag %s", s.GoDocVersion)
+	return nil
+}
+
 // AddAndCommit adds the modified fiels and tags the repository
 func (di *DefaultStageImplementation) AddAndCommit(o *StageOptions, s *State, tag string) error {
-	repo, err := git.OpenRepo(o.RepoPath)
-	if err != nil {
-		return errors.Wrap(err, "opening repository")
-	}
-
 	// git add --all
-	if err := repo.Add("--all"); err != nil {
+	if err := s.Repository.Add("--all"); err != nil {
 		return errors.Wrap(err, "adding modified files to release commit")
 	}
 
 	// git commit -n -s -m "Release commit for $(RELEASE_VERSION)"
-	if err := repo.UserCommit(
+	if err := s.Repository.UserCommit(
 		fmt.Sprintf("Release commit for %s", tag),
 	); err != nil {
 		return errors.Wrap(err, "creating release commit")
 	}
 	return nil
+}
+
+// CreateTag tags the repository
+func (di *DefaultStageImplementation) CreateTag(o *StageOptions, s *State, tag string) error {
+	repo, err := git.OpenRepo(o.RepoPath)
+	if err != nil {
+		return errors.Wrap(err, "opening repository")
+	}
+	return errors.Wrapf(
+		repo.Tag(tag, fmt.Sprintf("Release commit for %s", tag)),
+		"tagging repo with tag %s", tag,
+	)
+}
+
+func (di *DefaultStageImplementation) CheckOptions(o *StageOptions) error {
+	return o.Validate()
 }
