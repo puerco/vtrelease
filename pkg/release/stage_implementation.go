@@ -127,13 +127,15 @@ func (di *DefaultStageImplementation) AddAndCommit(o *StageOptions, s *State, ta
 }
 
 // CreateTag tags the repository
-func (di *DefaultStageImplementation) CreateTag(o *StageOptions, s *State, tag string) error {
+func (di *DefaultStageImplementation) CreateTag(
+	o *StageOptions, s *State, tag, message string,
+) error {
 	repo, err := git.OpenRepo(o.RepoPath)
 	if err != nil {
 		return errors.Wrap(err, "opening repository")
 	}
 	return errors.Wrapf(
-		repo.Tag(tag, fmt.Sprintf("Release commit for %s", tag)),
+		repo.Tag(tag, message),
 		"tagging repo with tag %s", tag,
 	)
 }

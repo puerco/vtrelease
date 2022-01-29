@@ -1,6 +1,8 @@
 package release
 
 import (
+	"fmt"
+
 	"github.com/pkg/errors"
 	"sigs.k8s.io/release-sdk/git"
 )
@@ -14,7 +16,7 @@ type StageImplementation interface {
 	WriteVersionFile(*StageOptions, string) error
 	GenerateJavaVersions(*StageOptions, *State, string) error
 	AddAndCommit(*StageOptions, *State, string) error
-	CreateTag(*StageOptions, *State, string) error
+	CreateTag(*StageOptions, *State, string, string) error
 	TagGoDocVersion(o *StageOptions, s *State) error
 }
 
@@ -39,6 +41,12 @@ type Stage struct {
 	Options StageOptions
 	impl    StageImplementation
 	State   State
+}
+
+func NewStage(o StageOptions) *Stage {
+	return &Stage{
+		Options: o,
+	}
 }
 
 // Run executes the release run
@@ -101,7 +109,7 @@ func (s *Stage) TagRepository() error {
 		}
 
 		// git tag -m Version\ $(RELEASE_VERSION) v$(RELEASE_VERSION)
-		if err := s.impl.CreateTag(&s.Options, &s.State, tag); err != nil {
+		if err := s.impl.CreateTag(&s.Options, &s.State, tag, fmt.Sprintf("Release commit for %s", tag)); err != nil {
 			return errors.Wrap(err, "creating tag")
 		}
 	}
