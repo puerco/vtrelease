@@ -93,16 +93,22 @@ func (s *Stage) Run() error {
 }
 
 func (s *Stage) PrepareEnvironment() error {
+	// Verify the runner environment
 	if err := s.impl.CheckEnvironment(&s.Options); err != nil {
 		return errors.Wrap(err, "checking build environment")
 	}
+
+	// Check all options are valid
 	if err := s.impl.CheckOptions(&s.Options); err != nil {
 		return errors.Wrap(err, "checking staging options")
 	}
+
+	// Open the repository
 	if err := s.impl.OpenRepository(&s.Options, &s.State); err != nil {
 		return errors.Wrap(err, "opening repository")
 	}
-	// FIXME: Check env . Check java compiler
+
+	// Set required environment values
 	return s.impl.SetEnvironment(&s.Options, &s.State)
 }
 
