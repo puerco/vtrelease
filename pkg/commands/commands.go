@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/release-utils/log"
 )
@@ -32,7 +33,7 @@ func New() *cobra.Command {
 
 	cmd.PersistentFlags().StringVar(
 		&rootOpts.RepoPath,
-		"repopath",
+		"repo",
 		os.Getenv("REPO_PATH"),
 		"path to the vitessio/vitess repo",
 	)
@@ -42,6 +43,10 @@ func New() *cobra.Command {
 		false,
 		"⚠️ CAUTION",
 	)
+
+	if err := cmd.MarkPersistentFlagRequired("repo"); err != nil {
+		logrus.Error("marking command as required")
+	}
 	addCommands(cmd)
 	return cmd
 }

@@ -27,6 +27,9 @@ type StageOptions struct {
 
 	// Branch is the branch from which we will release. Eg release-12.0
 	Branch string
+
+	// GoDocVersion
+	GoDocVersion string
 }
 
 func (o *StageOptions) Validate() error {

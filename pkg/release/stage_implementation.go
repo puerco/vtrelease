@@ -171,11 +171,11 @@ func (di *DefaultStageImplementation) CheckEnvironment(o *StageOptions) error {
 	// Check that the executables we need are in the path
 	logrus.Info("🔎 Looking for executables required for the build")
 	for _, program := range []string{"release-notes", "mvn"} {
-		path, err := exec.LookPath("release-notes")
+		path, err := exec.LookPath(program)
 		if err != nil {
 			return errors.Wrapf(err, "checking for %s in the system", program)
 		}
-		logrus.Infof(" %s executable found in %s", program, path)
+		logrus.Infof("  > %s executable found in %s", program, path)
 	}
 
 	// TODO(puerco) Check go version
