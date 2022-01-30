@@ -44,8 +44,14 @@ func New() *cobra.Command {
 		"⚠️ CAUTION",
 	)
 
-	if err := cmd.MarkPersistentFlagRequired("repo"); err != nil {
-		logrus.Error("marking command as required")
+	for _, f := range []string{"repo"} {
+		if err := cmd.MarkPersistentFlagRequired(f); err != nil {
+			logrus.Error("marking flag as required")
+		}
+	}
+
+	if err := cmd.MarkPersistentFlagDirname("repo"); err != nil {
+		logrus.Error("marking command as directory")
 	}
 	addCommands(cmd)
 	return cmd

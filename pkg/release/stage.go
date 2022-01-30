@@ -123,7 +123,7 @@ func (s *Stage) GenerateReleaseNotes() error {
 	}
 
 	// Run the release notes generator
-	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSga, s.State.ReleasePoint)
+	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSga, s.State.CurrentCommit)
 }
 
 // Write the version file and tag the repo. Each for the release and dev

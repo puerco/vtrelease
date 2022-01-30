@@ -27,31 +27,41 @@ func (di *DefaultStageImplementation) OpenRepository(o *StageOptions, s *State) 
 }
 
 func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions, s *State) error {
+	logrus.Info("💻 Setting up the environment")
 	// Sets the environment for the next release
 	e := env.New().WithRepository(s.Repository)
 
 	e.Options.Branch = o.Branch
 
-	nextTag, err := e.NextPatchVersion()
-	if err != nil {
-		logrus.Fatal(errors.Wrap(err, "getting next tag in the branch"))
-	}
-
 	// Check out the branch
+	logrus.Infof("  > Checking out branch %s", o.Branch)
 	if err := e.CheckoutBranch(); err != nil {
 		return errors.Wrap(err, "")
 	}
 
 	// Add the last version cut to the tag
-	prev, err := e.LastVersion()
+	prevTag, err := e.LastVersion()
 	if err != nil {
 		return errors.Wrap(err, "fetching the last version tag")
 	}
-	s.PreviousVersion = prev
+	logrus.Infof("  > Previous release tag: %s", prevTag)
+	s.PreviousVersion = prevTag
 
-	// Record the current commit where we are
+	nextTag, err := e.NextPatchVersion()
+	if err != nil {
+		logrus.Fatal(errors.Wrap(err, "getting next tag in the branch"))
+	}
+	logrus.Infof("  > Next release tag will be: %s", nextTag)
+	s.Version = nextTag
 
-	logrus.Infof("The next in the release cut will be %s", nextTag)
+	// Record the current commit (last before the release commit)
+	curCommit, err := di.GetRevSHA(o, s, "HEAD")
+	if err != nil {
+		return errors.Wrap(err, "trying to get the current repository commit")
+	}
+	logrus.Infof("  > Current branch position: %s", curCommit)
+	s.CurrentCommit = curCommit
+
 	return nil
 }
 
@@ -75,10 +85,15 @@ func (di *DefaultStageImplementation) WriteVersionFile(o *StageOptions, tag stri
 func (di *DefaultStageImplementation) GenerateReleaseNotes(
 	o *StageOptions, s *State, shaFrom, shaEnd string,
 ) error {
+	logrus.Info("📔 Generating release notes")
+	logrus.Infof("  > From SHA: %s", shaFrom)
+	logrus.Infof("  > To SHA:   %s", shaEnd)
 	tmp, err := os.CreateTemp("", "release-notes-")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary release notes file")
 	}
+
+	// Record the temporary file in the in the state
 	s.ReleaseNotesPath = tmp.Name()
 
 	// Run the release notes generator
