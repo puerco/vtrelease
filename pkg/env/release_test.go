@@ -26,11 +26,10 @@ func TestLastVersion(t *testing.T) {
 		// Malformed branch
 		{"v12.0.0", "release-12", []string{}, true},
 	} {
-
 		sut := env.Environment{
 			Options: env.Options{Branch: tc.branch},
 		}
-		fake := &envfakes.FakeEnvImplementation{}
+		fake := &envfakes.FakeImplementation{}
 
 		fake.GetRepoTagsReturns(tc.tags, nil)
 		sut.SetImplementation(fake)
@@ -42,6 +41,5 @@ func TestLastVersion(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.expectedVersion, ver)
 		}
-
 	}
 }

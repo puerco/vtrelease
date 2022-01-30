@@ -5,13 +5,15 @@ import (
 	"sync"
 
 	"github.com/puerco/vtrelease/pkg/env"
+	"sigs.k8s.io/release-sdk/git"
 )
 
-type FakeEnvImplementation struct {
-	CheckoutBranchStub        func(*env.Options) error
+type FakeImplementation struct {
+	CheckoutBranchStub        func(*env.Options, *git.Repo) error
 	checkoutBranchMutex       sync.RWMutex
 	checkoutBranchArgsForCall []struct {
 		arg1 *env.Options
+		arg2 *git.Repo
 	}
 	checkoutBranchReturns struct {
 		result1 error
@@ -19,10 +21,11 @@ type FakeEnvImplementation struct {
 	checkoutBranchReturnsOnCall map[int]struct {
 		result1 error
 	}
-	GetRepoTagsStub        func(*env.Options) ([]string, error)
+	GetRepoTagsStub        func(*env.Options, *git.Repo) ([]string, error)
 	getRepoTagsMutex       sync.RWMutex
 	getRepoTagsArgsForCall []struct {
 		arg1 *env.Options
+		arg2 *git.Repo
 	}
 	getRepoTagsReturns struct {
 		result1 []string
@@ -36,18 +39,19 @@ type FakeEnvImplementation struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranch(arg1 *env.Options) error {
+func (fake *FakeImplementation) CheckoutBranch(arg1 *env.Options, arg2 *git.Repo) error {
 	fake.checkoutBranchMutex.Lock()
 	ret, specificReturn := fake.checkoutBranchReturnsOnCall[len(fake.checkoutBranchArgsForCall)]
 	fake.checkoutBranchArgsForCall = append(fake.checkoutBranchArgsForCall, struct {
 		arg1 *env.Options
-	}{arg1})
+		arg2 *git.Repo
+	}{arg1, arg2})
 	stub := fake.CheckoutBranchStub
 	fakeReturns := fake.checkoutBranchReturns
-	fake.recordInvocation("CheckoutBranch", []interface{}{arg1})
+	fake.recordInvocation("CheckoutBranch", []interface{}{arg1, arg2})
 	fake.checkoutBranchMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -55,26 +59,26 @@ func (fake *FakeEnvImplementation) CheckoutBranch(arg1 *env.Options) error {
 	return fakeReturns.result1
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranchCallCount() int {
+func (fake *FakeImplementation) CheckoutBranchCallCount() int {
 	fake.checkoutBranchMutex.RLock()
 	defer fake.checkoutBranchMutex.RUnlock()
 	return len(fake.checkoutBranchArgsForCall)
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranchCalls(stub func(*env.Options) error) {
+func (fake *FakeImplementation) CheckoutBranchCalls(stub func(*env.Options, *git.Repo) error) {
 	fake.checkoutBranchMutex.Lock()
 	defer fake.checkoutBranchMutex.Unlock()
 	fake.CheckoutBranchStub = stub
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranchArgsForCall(i int) *env.Options {
+func (fake *FakeImplementation) CheckoutBranchArgsForCall(i int) (*env.Options, *git.Repo) {
 	fake.checkoutBranchMutex.RLock()
 	defer fake.checkoutBranchMutex.RUnlock()
 	argsForCall := fake.checkoutBranchArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranchReturns(result1 error) {
+func (fake *FakeImplementation) CheckoutBranchReturns(result1 error) {
 	fake.checkoutBranchMutex.Lock()
 	defer fake.checkoutBranchMutex.Unlock()
 	fake.CheckoutBranchStub = nil
@@ -83,7 +87,7 @@ func (fake *FakeEnvImplementation) CheckoutBranchReturns(result1 error) {
 	}{result1}
 }
 
-func (fake *FakeEnvImplementation) CheckoutBranchReturnsOnCall(i int, result1 error) {
+func (fake *FakeImplementation) CheckoutBranchReturnsOnCall(i int, result1 error) {
 	fake.checkoutBranchMutex.Lock()
 	defer fake.checkoutBranchMutex.Unlock()
 	fake.CheckoutBranchStub = nil
@@ -97,18 +101,19 @@ func (fake *FakeEnvImplementation) CheckoutBranchReturnsOnCall(i int, result1 er
 	}{result1}
 }
 
-func (fake *FakeEnvImplementation) GetRepoTags(arg1 *env.Options) ([]string, error) {
+func (fake *FakeImplementation) GetRepoTags(arg1 *env.Options, arg2 *git.Repo) ([]string, error) {
 	fake.getRepoTagsMutex.Lock()
 	ret, specificReturn := fake.getRepoTagsReturnsOnCall[len(fake.getRepoTagsArgsForCall)]
 	fake.getRepoTagsArgsForCall = append(fake.getRepoTagsArgsForCall, struct {
 		arg1 *env.Options
-	}{arg1})
+		arg2 *git.Repo
+	}{arg1, arg2})
 	stub := fake.GetRepoTagsStub
 	fakeReturns := fake.getRepoTagsReturns
-	fake.recordInvocation("GetRepoTags", []interface{}{arg1})
+	fake.recordInvocation("GetRepoTags", []interface{}{arg1, arg2})
 	fake.getRepoTagsMutex.Unlock()
 	if stub != nil {
-		return stub(arg1)
+		return stub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -116,26 +121,26 @@ func (fake *FakeEnvImplementation) GetRepoTags(arg1 *env.Options) ([]string, err
 	return fakeReturns.result1, fakeReturns.result2
 }
 
-func (fake *FakeEnvImplementation) GetRepoTagsCallCount() int {
+func (fake *FakeImplementation) GetRepoTagsCallCount() int {
 	fake.getRepoTagsMutex.RLock()
 	defer fake.getRepoTagsMutex.RUnlock()
 	return len(fake.getRepoTagsArgsForCall)
 }
 
-func (fake *FakeEnvImplementation) GetRepoTagsCalls(stub func(*env.Options) ([]string, error)) {
+func (fake *FakeImplementation) GetRepoTagsCalls(stub func(*env.Options, *git.Repo) ([]string, error)) {
 	fake.getRepoTagsMutex.Lock()
 	defer fake.getRepoTagsMutex.Unlock()
 	fake.GetRepoTagsStub = stub
 }
 
-func (fake *FakeEnvImplementation) GetRepoTagsArgsForCall(i int) *env.Options {
+func (fake *FakeImplementation) GetRepoTagsArgsForCall(i int) (*env.Options, *git.Repo) {
 	fake.getRepoTagsMutex.RLock()
 	defer fake.getRepoTagsMutex.RUnlock()
 	argsForCall := fake.getRepoTagsArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
-func (fake *FakeEnvImplementation) GetRepoTagsReturns(result1 []string, result2 error) {
+func (fake *FakeImplementation) GetRepoTagsReturns(result1 []string, result2 error) {
 	fake.getRepoTagsMutex.Lock()
 	defer fake.getRepoTagsMutex.Unlock()
 	fake.GetRepoTagsStub = nil
@@ -145,7 +150,7 @@ func (fake *FakeEnvImplementation) GetRepoTagsReturns(result1 []string, result2 
 	}{result1, result2}
 }
 
-func (fake *FakeEnvImplementation) GetRepoTagsReturnsOnCall(i int, result1 []string, result2 error) {
+func (fake *FakeImplementation) GetRepoTagsReturnsOnCall(i int, result1 []string, result2 error) {
 	fake.getRepoTagsMutex.Lock()
 	defer fake.getRepoTagsMutex.Unlock()
 	fake.GetRepoTagsStub = nil
@@ -161,7 +166,7 @@ func (fake *FakeEnvImplementation) GetRepoTagsReturnsOnCall(i int, result1 []str
 	}{result1, result2}
 }
 
-func (fake *FakeEnvImplementation) Invocations() map[string][][]interface{} {
+func (fake *FakeImplementation) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.checkoutBranchMutex.RLock()
@@ -175,7 +180,7 @@ func (fake *FakeEnvImplementation) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeEnvImplementation) recordInvocation(key string, args []interface{}) {
+func (fake *FakeImplementation) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -187,4 +192,4 @@ func (fake *FakeEnvImplementation) recordInvocation(key string, args []interface
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ env.EnvImplementation = new(FakeEnvImplementation)
+var _ env.Implementation = new(FakeImplementation)

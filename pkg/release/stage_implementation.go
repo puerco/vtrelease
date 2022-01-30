@@ -25,21 +25,30 @@ func (di *DefaultStageImplementation) OpenRepository(o *StageOptions, s *State) 
 	return nil
 }
 
-func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions) error {
+func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions, s *State) error {
 	// Sets the environment for the next release
-	e := env.New()
-	e.Options.Branch = "release-12.0"
-	e.Options.RepoPath = "/home/urbano/Projects/vitess/"
+	e := env.New().WithRepository(s.Repository)
+
+	e.Options.Branch = o.Branch
 
 	nextTag, err := e.NextPatchVersion()
 	if err != nil {
-		logrus.Fatal(errors.Wrap(err, "getting next tag in the branc"))
+		logrus.Fatal(errors.Wrap(err, "getting next tag in the branch"))
 	}
 
 	// Check out the branch
 	if err := e.CheckoutBranch(); err != nil {
 		return errors.Wrap(err, "")
 	}
+
+	// Add the last version cut to the tag
+	prev, err := e.LastVersion()
+	if err != nil {
+		return errors.Wrap(err, "fetching the last version tag")
+	}
+	s.PreviousVersion = prev
+
+	// Record the current commit where we are
 
 	logrus.Infof("The next in the release cut will be %s", nextTag)
 	return nil
@@ -62,20 +71,21 @@ func (di *DefaultStageImplementation) WriteVersionFile(o *StageOptions, tag stri
 }
 
 // GenerateReleaseNotes runs the release not program to generate the changelog
-func (di *DefaultStageImplementation) GenerateReleaseNotes(o *StageOptions, s *State) error {
+func (di *DefaultStageImplementation) GenerateReleaseNotes(
+	o *StageOptions, s *State, shaFrom, shaEnd string,
+) error {
 	tmp, err := os.CreateTemp("", "release-notes-")
 	if err != nil {
 		return errors.Wrap(err, "creating temporary release notes file")
 	}
 	s.ReleaseNotesPath = tmp.Name()
 
-	var sha_from, sha_end string
-	// TODO: Get the shas
+	// Run the release notes generator
 	cmd := command.NewWithWorkDir(
 		o.RepoPath,      // CWD
-		"release-notes", // Path to compled release notes binary
-		"-from", sha_from,
-		"-to,", sha_end,
+		"release-notes", // Path to compiled release notes binary
+		"-from", shaFrom,
+		"-to,", shaEnd,
 		"-version", s.Version,
 		"-summary", "$(SUMMARY)", /// ???
 	)
@@ -93,7 +103,7 @@ func (di *DefaultStageImplementation) GenerateJavaVersions(o *StageOptions, s *S
 	)
 	// Execute the command
 	return errors.Wrapf(
-		cmd.RunSuccess(), "executing maven to patch sources with tag", tag,
+		cmd.RunSuccess(), "executing maven to patch sources with tag %s", tag,
 	)
 }
 
@@ -106,11 +116,11 @@ func (di *DefaultStageImplementation) TagGoDocVersion(o *StageOptions, s *State)
 		)); err != nil {
 		return errors.Wrap(err, "creating godoc tag")
 	}
-	logrus.Info("Tagged release commit with godoc tag %s", s.GoDocVersion)
+	logrus.Infof("Tagged release commit with godoc tag %s", s.GoDocVersion)
 	return nil
 }
 
-// AddAndCommit adds the modified fiels and tags the repository
+// AddAndCommit adds the modified files and tags the repository
 func (di *DefaultStageImplementation) AddAndCommit(o *StageOptions, s *State, tag string) error {
 	// git add --all
 	if err := s.Repository.Add("--all"); err != nil {
@@ -142,4 +152,15 @@ func (di *DefaultStageImplementation) CreateTag(
 
 func (di *DefaultStageImplementation) CheckOptions(o *StageOptions) error {
 	return o.Validate()
+}
+
+// GetRevSHA ghets a git revision and returns the corresponding commit tag if found
+func (di *DefaultStageImplementation) GetRevSHA(
+	o *StageOptions, s *State, revision string,
+) (tag string, err error) {
+	commit, err := s.Repository.RevParse(revision)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting commit for revision %s", revision)
+	}
+	return commit, err
 }

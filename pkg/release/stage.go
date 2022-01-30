@@ -11,30 +11,56 @@ type StageImplementation interface {
 	CheckOptions(*StageOptions) error
 	SetEnvironment(*StageOptions, *State) error
 	OpenRepository(*StageOptions, *State) error
-	GenerateReleaseNotes(*StageOptions, *State) error
-	TagRepository(*StageOptions, *State) error
+	GenerateReleaseNotes(*StageOptions, *State, string, string) error
 	WriteVersionFile(*StageOptions, string) error
 	GenerateJavaVersions(*StageOptions, *State, string) error
 	AddAndCommit(*StageOptions, *State, string) error
 	CreateTag(*StageOptions, *State, string, string) error
 	TagGoDocVersion(o *StageOptions, s *State) error
+	GetRevSHA(*StageOptions, *State, string) (string, error)
+	CheckEnvironment(*StageOptions) error
 }
 
 type StageOptions struct {
+	// RepoPath is where the vitess repository is located
 	RepoPath string
+
+	// Branch is the branch from which we will release. Eg release-12.0
+	Branch string
 }
 
 func (o *StageOptions) Validate() error {
 	// TODO: Implement
+	if o.RepoPath == "" {
+		return errors.New("Path to repository not defined")
+	}
+
 	return nil
 }
 
 type State struct {
-	Version          string
-	DevVersion       string
-	GoDocVersion     string
+	// The tag we will cut
+	Version string
+
+	//
+	DevVersion string
+
+	// PreviousVersion cotains the last tag that was cut
+	PreviousVersion string
+
+	// GoDoc tag to apply to the release commit in addition to the release tag
+	GoDocVersion string
+
+	// Path to store the release notes file
 	ReleaseNotesPath string
-	Repository       *git.Repo
+
+	// Current commit contains the last commit in the release before we add the release commit
+	CurrentCommit string
+
+	// SHA of the commit that will contain the tag
+	ReleasePoint string
+
+	Repository *git.Repo
 }
 
 type Stage struct {
@@ -45,6 +71,7 @@ type Stage struct {
 
 func NewStage(o StageOptions) *Stage {
 	return &Stage{
+		impl:    &DefaultStageImplementation{},
 		Options: o,
 	}
 }
@@ -66,6 +93,9 @@ func (s *Stage) Run() error {
 }
 
 func (s *Stage) PrepareEnvironment() error {
+	if err := s.impl.CheckEnvironment(&s.Options); err != nil {
+		return errors.Wrap(err, "checking build environment")
+	}
 	if err := s.impl.CheckOptions(&s.Options); err != nil {
 		return errors.Wrap(err, "checking staging options")
 	}
@@ -77,7 +107,14 @@ func (s *Stage) PrepareEnvironment() error {
 }
 
 func (s *Stage) GenerateReleaseNotes() error {
-	return s.impl.GenerateReleaseNotes(&s.Options, &s.State)
+	// Get the commit sha of the previous release
+	fromSga, err := s.impl.GetRevSHA(&s.Options, &s.State, s.State.PreviousVersion)
+	if err != nil {
+		return errors.Wrap(err, "getting previoud release commit sha")
+	}
+
+	// Run the release notes generator
+	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSga, s.State.ReleasePoint)
 }
 
 // Write the version file and tag the repo. Each for the release and dev
@@ -86,7 +123,7 @@ func (s *Stage) TagRepository() error {
 	// We cycle here the two release versions
 	for _, tag := range []string{s.State.Version, s.State.DevVersion} {
 		if err := s.impl.GenerateJavaVersions(&s.Options, &s.State, tag); err != nil {
-			return errors.Wrapf(err, "writing generating version %s in java")
+			return errors.Wrapf(err, "generating version %s files in java source", s.State.Version)
 		}
 		// Write the version file
 		if err := s.impl.WriteVersionFile(&s.Options, tag); err != nil {

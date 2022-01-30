@@ -20,7 +20,6 @@ func TestBranchVersion(t *testing.T) {
 		{"release-12", true, 12},
 		{"12.0", true, 12},
 	} {
-
 		e.Options.Branch = tc.branchName
 		ver, err := e.BranchVersion()
 		if tc.shouldError {
