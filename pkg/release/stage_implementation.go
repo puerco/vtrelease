@@ -98,12 +98,14 @@ func (di *DefaultStageImplementation) GenerateReleaseNotes(
 
 	// Run the release notes generator
 	cmd := command.NewWithWorkDir(
-		o.RepoPath,      // CWD
-		"release-notes", // Path to compiled release notes binary
+		o.RepoPath, // CWD
+		"go",       // Path to compiled release notes binary
+		"run",
+		"./go/tools/release-notes",
 		"-from", shaFrom,
-		"-to,", shaEnd,
+		"-to", shaEnd,
 		"-version", s.Version,
-		"-summary", "$(SUMMARY)", /// ???
+		"-summary", s.ReleaseNotesPath,
 	)
 	return errors.Wrap(
 		cmd.RunSuccess(), "calling release notes generator",
