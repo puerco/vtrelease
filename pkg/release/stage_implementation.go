@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/puerco/vtrelease/pkg/env"
@@ -116,9 +117,12 @@ func (di *DefaultStageImplementation) GenerateReleaseNotes(
 func (di *DefaultStageImplementation) GenerateJavaVersions(o *StageOptions, s *State, tag string) error {
 	// Invoke maven to patch the sources
 	cmd := command.NewWithWorkDir(
-		o.RepoPath,
+		filepath.Join(o.RepoPath, "java"),
 		"mvn", "versions:set", fmt.Sprintf("-DnewVersion=%s", tag),
 	)
+
+	// TODO(puerco): Ensure source has been patched correctly
+
 	// Execute the command
 	return errors.Wrapf(
 		cmd.RunSuccess(), "executing maven to patch sources with tag %s", tag,
