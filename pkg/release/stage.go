@@ -3,6 +3,7 @@ package release
 import (
 	"fmt"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/release-sdk/git"
 )
@@ -45,7 +46,10 @@ type State struct {
 	// The tag we will cut
 	Version string
 
-	//
+	// Version tag in semver
+	SemVer semver.Version
+
+	// Development version tag to follow the release we are cutting
 	DevVersion string
 
 	// PreviousVersion cotains the last tag that was cut

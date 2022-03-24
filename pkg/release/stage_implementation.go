@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"github.com/puerco/vtrelease/pkg/env"
 	"github.com/sirupsen/logrus"
@@ -53,8 +54,13 @@ func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions, s *State) 
 	if err != nil {
 		logrus.Fatal(errors.Wrap(err, "getting next tag in the branch"))
 	}
+	sv, err := semver.Parse(strings.TrimPrefix(nextTag, "v"))
+	if err != nil {
+		return errors.Wrap(err, "parsing version tag")
+	}
 	logrus.Infof("  > Next release tag will be: %s", nextTag)
 	s.Version = nextTag
+	s.SemVer = sv
 
 	devTag, err := e.NextDevVersion()
 	if err != nil {
@@ -123,6 +129,7 @@ func (di *DefaultStageImplementation) GenerateReleaseNotes(
 		"-version", s.Version,
 		"-summary", s.ReleaseNotesPath,
 	)
+
 	return errors.Wrap(
 		cmd.RunSuccess(), "calling release notes generator",
 	)
