@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/puerco/vtrelease/pkg/env"
@@ -197,6 +198,14 @@ func (di *DefaultStageImplementation) CheckEnvironment(o *StageOptions) error {
 			return errors.Wrapf(err, "checking for %s in the system", program)
 		}
 		logrus.Infof("  > %s executable found in %s", program, path)
+	}
+
+	if o.Branch == "" {
+		return errors.New("branch not set")
+	}
+
+	if !strings.HasPrefix(o.Branch, "release-") || !strings.HasSuffix(o.Branch, ".0") {
+		return errors.New("invalid branch name")
 	}
 
 	// TODO(puerco) Check go version
