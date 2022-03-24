@@ -11,6 +11,12 @@ on:
         description: 'Vutess tag to run at'
 jobs:
   setup:
+    permissions:
+      # write permission needed for OIDC token exchange.
+      id-token: write
+      contents: read
+    env:
+      VT_BASE_VER: ${{ github.event.inputs.tag }}
     runs-on: ['ubuntu-latest']  
     steps:
     - name: "Checkout Builder Repo"
@@ -28,16 +34,7 @@ jobs:
       run: |
         go build -o ./vitess/vtrelease ./cmd/vtrelease/main.go
 
-  images:
-    runs-on: ['ubuntu-latest']  
-    name: "Build Container Images"
-    permissions:
-      # write permission needed for OIDC token exchange.
-      id-token: write
-      contents: read
-    env:
-      VT_BASE_VER: ${{ github.event.inputs.tag }}
-    steps:
+    
     - id: 'auth'
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0.6.0'
