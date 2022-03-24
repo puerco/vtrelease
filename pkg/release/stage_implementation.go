@@ -90,6 +90,10 @@ func (di *DefaultStageImplementation) WriteVersionFile(o *StageOptions, tag stri
 func (di *DefaultStageImplementation) GenerateReleaseNotes(
 	o *StageOptions, s *State, shaFrom, shaEnd string,
 ) error {
+	// Ensure we have an actual range
+	if shaFrom == shaEnd {
+		return errors.New("start and end commits for release notes are the same")
+	}
 	logrus.Info("📔 Generating release notes")
 	logrus.Infof("  > From SHA: %s", shaFrom)
 	logrus.Infof("  > To SHA:   %s", shaEnd)
