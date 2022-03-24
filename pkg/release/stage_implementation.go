@@ -13,6 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"sigs.k8s.io/release-sdk/git"
 	"sigs.k8s.io/release-utils/command"
+	"sigs.k8s.io/release-utils/util"
 )
 
 const versionFile = "go/vt/servenv/version.go"
@@ -110,13 +111,22 @@ func (di *DefaultStageImplementation) GenerateReleaseNotes(
 	logrus.Info("📔 Generating release notes")
 	logrus.Infof("  > From SHA: %s", shaFrom)
 	logrus.Infof("  > To SHA:   %s", shaEnd)
-	tmp, err := os.CreateTemp("", "release-notes-")
-	if err != nil {
-		return errors.Wrap(err, "creating temporary release notes file")
-	}
 
 	// Record the temporary file in the in the state
-	s.ReleaseNotesPath = tmp.Name()
+	s.ReleaseNotesPath = filepath.Join(
+		o.RepoPath, fmt.Sprintf(
+			"doc/releasenotes/%d_%d_%d_release_notes.md",
+			s.SemVer.Major, s.SemVer.Minor, s.SemVer.Patch,
+		),
+	)
+
+	// The release notes scipt b0rks if the file does not
+	// exist before running
+	if !util.Exists(s.ReleaseNotesPath) {
+		if err := os.WriteFile(s.ReleaseNotesPath, []byte{}, os.FileMode(0o644)); err != nil {
+			return errors.Wrap(err, "touching release notes file")
+		}
+	}
 
 	// Run the release notes generator
 	cmd := command.NewWithWorkDir(
@@ -127,7 +137,8 @@ func (di *DefaultStageImplementation) GenerateReleaseNotes(
 		"-from", shaFrom,
 		"-to", shaEnd,
 		"-version", s.Version,
-		"-summary", s.ReleaseNotesPath,
+		// "-summary" TODO(puerco): Where to get the summary
+		"-file", s.ReleaseNotesPath,
 	)
 
 	return errors.Wrap(
