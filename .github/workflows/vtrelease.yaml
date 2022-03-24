@@ -1,0 +1,36 @@
+name: VTRelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        required: true
+        type: string
+        
+        #default: 'plan'
+        description: 'Vutess tag to run at'
+jobs:
+  setup:
+    steps:
+    - name: "Checkout Repo"
+      uses: 'actions/checkout@v3'
+  images:
+    runs-on: ['ubuntu-latest']  
+    name: "Build Container Images"
+    env:
+      VT_BASE_VER: ${{ github.event.inputs.tag }}
+    steps:
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v0.6.0'
+      with:
+        workload_identity_provider: 'projects/747431767560/locations/global/workloadIdentityPools/my-pool/providers/github-actions-pool'
+        service_account: 'vitess@puerco-chainguard.iam.gserviceaccount.com'
+    - name: 'Setup gcloud'
+      uses: 'google-github-actions/setup-gcloud@v0.6.0'
+      with:
+        project_id: ${{ env.PROJECT_ID }}
+    - name: 'Configure GCR auth'
+      run: gcloud auth configure-docker
+
+
