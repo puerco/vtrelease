@@ -59,6 +59,7 @@ func New() *cobra.Command {
 
 func addCommands(cmd *cobra.Command) {
 	AddStage(cmd)
+	AddBuild(cmd)
 }
 
 func initLogging(*cobra.Command, []string) error {
