@@ -13,8 +13,20 @@ jobs:
   setup:
     runs-on: ['ubuntu-latest']  
     steps:
-    - name: "Checkout Repo"
+    - name: "Checkout Builder Repo"
       uses: 'actions/checkout@v3'
+    - name: "Checkout Vitess Repo"
+      uses: 'actions/checkout@v3'
+      with:
+        repository: "vitessio/vitess"
+    - name: Install Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '1.17.x'
+    - name: build
+      run: |
+        go build -o ./vitess/vtrelease ./cmd/vtrelease/main.go
+
   images:
     runs-on: ['ubuntu-latest']  
     name: "Build Container Images"
@@ -37,5 +49,8 @@ jobs:
         project_id: ${{ env.PROJECT_ID }}
     - name: 'Configure GCR auth'
       run: gcloud auth configure-docker
+    - name: "Test Image"
+      run: |
+        ./vitess/vtrelease build --repo=vitess image --version ${{ env.VT_BASE_VER }} vtgate
 
 
