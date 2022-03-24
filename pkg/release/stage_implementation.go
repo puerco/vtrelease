@@ -69,9 +69,12 @@ func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions, s *State) 
 
 // WriteVersionFile stamps the tag into the version.go file of the server
 func (di *DefaultStageImplementation) WriteVersionFile(o *StageOptions, tag string) error {
-	f, err := os.Create(versionFile)
+	if tag == "" {
+		return errors.New("unable to write version files, empty tag")
+	}
+	f, err := os.Create(filepath.Join(o.RepoPath, versionFile))
 	if err != nil {
-		return errors.Wrap(err, "while opening version.go for writing")
+		return errors.Wrapf(err, "while opening %s for writing", versionFile)
 	}
 	defer f.Close()
 
