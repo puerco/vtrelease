@@ -29,7 +29,7 @@ jobs:
       name: 'Authenticate to Google Cloud'
       uses: 'google-github-actions/auth@v0.6.0'
       with:
-        workload_identity_provider: 'projects/747431767560/locations/global/workloadIdentityPools/my-pool/providers/github-actions-pool'
+        workload_identity_provider: 'projects/747431767560/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
         service_account: 'vitess@puerco-chainguard.iam.gserviceaccount.com'
     - name: 'Setup gcloud'
       uses: 'google-github-actions/setup-gcloud@v0.6.0'
