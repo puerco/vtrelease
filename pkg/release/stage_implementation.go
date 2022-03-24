@@ -56,6 +56,13 @@ func (di *DefaultStageImplementation) SetEnvironment(o *StageOptions, s *State) 
 	logrus.Infof("  > Next release tag will be: %s", nextTag)
 	s.Version = nextTag
 
+	devTag, err := e.NextDevVersion()
+	if err != nil {
+		logrus.Fatal(errors.Wrap(err, "getting next dev tag in the branch"))
+	}
+	logrus.Infof("  > Next development tag will be: %s", devTag)
+	s.DevVersion = devTag
+
 	// Record the current commit (last before the release commit)
 	curCommit, err := di.GetRevSHA(o, s, "HEAD")
 	if err != nil {
@@ -158,9 +165,12 @@ func (di *DefaultStageImplementation) AddAndCommit(o *StageOptions, s *State, ta
 	}
 
 	// git commit -n -s -m "Release commit for $(RELEASE_VERSION)"
-	if err := s.Repository.UserCommit(
-		fmt.Sprintf("Release commit for %s", tag),
-	); err != nil {
+	commitMsg := fmt.Sprintf("Release commit for %s", tag)
+	if strings.HasSuffix(tag, "-SNAPSHOT") {
+		commitMsg = "Back to dev mode"
+	}
+
+	if err := s.Repository.UserCommit(commitMsg); err != nil {
 		return errors.Wrap(err, "creating release commit")
 	}
 	return nil

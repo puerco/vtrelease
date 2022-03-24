@@ -135,8 +135,8 @@ func (s *Stage) GenerateReleaseNotes() error {
 	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSha, toSha)
 }
 
-// Write the version file and tag the repo. Each for the release and dev
-// versions.
+// TagRepository writes the version file and tag the repo. Each for the
+// release and dev versions.
 func (s *Stage) TagRepository() error {
 	// We cycle here the two release versions
 	for _, tag := range []string{s.State.Version, s.State.DevVersion} {
@@ -148,8 +148,18 @@ func (s *Stage) TagRepository() error {
 			return errors.Wrapf(err, "writing tag %s to code", tag)
 		}
 
+		if err := s.impl.AddAndCommit(&s.Options, &s.State, tag); err != nil {
+			return errors.Wrap(err, "creating tag commit")
+		}
+
+		// When tagging the devversion, we do not tag
 		if tag == s.State.DevVersion {
 			continue
+		}
+
+		// git tag -m Version\ $(RELEASE_VERSION) v$(RELEASE_VERSION)
+		if err := s.impl.CreateTag(&s.Options, &s.State, tag, fmt.Sprintf("Release commit for %s", tag)); err != nil {
+			return errors.Wrap(err, "creating tag")
 		}
 
 		// If we have a GO_DOC
@@ -157,15 +167,6 @@ func (s *Stage) TagRepository() error {
 			if err := s.impl.TagGoDocVersion(&s.Options, &s.State); err != nil {
 				return errors.Wrap(err, "tagging godoc version")
 			}
-		}
-
-		if err := s.impl.AddAndCommit(&s.Options, &s.State, tag); err != nil {
-			return errors.Wrap(err, "creating tag commit")
-		}
-
-		// git tag -m Version\ $(RELEASE_VERSION) v$(RELEASE_VERSION)
-		if err := s.impl.CreateTag(&s.Options, &s.State, tag, fmt.Sprintf("Release commit for %s", tag)); err != nil {
-			return errors.Wrap(err, "creating tag")
 		}
 	}
 	return nil

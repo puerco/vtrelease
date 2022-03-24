@@ -104,6 +104,33 @@ func (e *Environment) NextPatchVersion() (string, error) {
 	return fmt.Sprintf("v%d.%d.%d", ver.Major, ver.Minor, ver.Patch+1), nil
 }
 
+// NextDevVersion returns the next tag in the branch
+func (e *Environment) NextDevVersion() (string, error) {
+	lastVer, err := e.LastVersion()
+	if err != nil {
+		return "", errors.Wrap(err, "while getting last version from the repo")
+	}
+
+	/// If last version is an empty string, set the 0.0 for the branch
+	if lastVer == "" {
+		branchVersion, err := e.BranchVersion()
+		if err != nil {
+			return "", errors.Wrap(err, "getting branch version")
+		}
+		if branchVersion == 0 {
+			return "", errors.New("Unable to get major version from branch")
+		}
+		return fmt.Sprintf("v%d.%d.%d-SNAPSHOT", branchVersion, 0, 1), nil
+	}
+
+	ver, err := semver.Parse(lastVer[1:])
+	if err != nil {
+		return "", errors.Wrap(err, "parsing last version tag")
+	}
+
+	return fmt.Sprintf("v%d.%d.%d-SNAPSHOT", ver.Major, ver.Minor, ver.Patch+2), nil
+}
+
 // NextVersion returns the next tag in the branch
 func (e *Environment) NextMinorVersion() (string, error) {
 	lastVer, err := e.LastVersion()
