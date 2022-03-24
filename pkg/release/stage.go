@@ -117,13 +117,22 @@ func (s *Stage) PrepareEnvironment() error {
 
 func (s *Stage) GenerateReleaseNotes() error {
 	// Get the commit sha of the previous release
-	fromSga, err := s.impl.GetRevSHA(&s.Options, &s.State, s.State.PreviousVersion)
+	fromSha, err := s.impl.GetRevSHA(&s.Options, &s.State, s.State.PreviousVersion)
 	if err != nil {
-		return errors.Wrap(err, "getting previoud release commit sha")
+		return errors.Wrap(err, "getting previous release commit sha")
+	}
+
+	// Current commit is the tag commit. Therefore, we will generate the
+	// release notes up to the previous one
+	toSha, err := s.impl.GetRevSHA(
+		&s.Options, &s.State, fmt.Sprintf("%s~1", s.State.CurrentCommit),
+	)
+	if err != nil {
+		return errors.Wrap(err, "getting previous release commit sha")
 	}
 
 	// Run the release notes generator
-	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSga, s.State.CurrentCommit)
+	return s.impl.GenerateReleaseNotes(&s.Options, &s.State, fromSha, toSha)
 }
 
 // Write the version file and tag the repo. Each for the release and dev
