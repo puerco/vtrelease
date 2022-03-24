@@ -18,6 +18,10 @@ jobs:
   images:
     runs-on: ['ubuntu-latest']  
     name: "Build Container Images"
+    permissions:
+      # write permission needed for OIDC token exchange.
+      id-token: write
+      contents: read
     env:
       VT_BASE_VER: ${{ github.event.inputs.tag }}
     steps:
